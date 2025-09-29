@@ -1,144 +1,116 @@
-# AresVuln
+box it will perofrom the attacks and tell the attacks
+ChatGPT said:
+AresVuln — README
 
-**AresVuln — Mythic-themed web vulnerability scanner (GUI + CLI)**
+AresVuln — GUI-first web vulnerability scanner
+Single-box URL scanner: enter a URL, run configured attacks, and get a clear list of findings with evidence.
 
-AresVuln is a modular, GUI-first web vulnerability scanner built for security teams and developers who want fast discovery and clear results without wrestling with the command line. It bundles a user-friendly desktop/web GUI with the option to run scans from the CLI and in automated pipelines.
+⚠️ Legal & safety notice: Only scan systems you own or have explicit written permission to test. AresVuln includes simulated and non‑destructive modes — use them for production targets.
 
-> ⚠️ **Important — Authorized testing only.** Always obtain explicit written permission before scanning systems you do not own. AresVuln includes non-destructive and simulated testing modes to reduce risk when assessing production systems.
+What this README describes
 
----
+This README explains the one‑box GUI flow you asked for: a single input box where a user pastes a URL and clicks Scan. The app will run the selected scan profile (Non‑Destructive, Simulated, or Full Audit) against that URL, enumerate findings, and present attack details and evidence in the UI.
 
-## Overview
+Quick features (single-box workflow)
 
-AresVuln performs automated discovery and verification of common web application weaknesses (OWASP Top 10 categories) while emphasizing safety, reproducibility, and extensibility. The GUI exposes scan configuration, live progress, evidence viewers, and reporting tools, so findings are easy to triage and export.
+Single URL input box on the main screen (required fields: Target URL, optional Scope/Allowed Domain).
 
----
+Scan button (Start / Pause / Stop) beside the box.
 
-## Key Features (GUI-focused)
+Profile selector (Non‑Destructive / Simulated / Full Audit) — defaults to Non‑Destructive.
 
-* **Graphical dashboard**: create and manage targets, scopes, and scan profiles.
-* **One-click scan**: enter a target URL, choose a scan profile, and start.
-* **Scan profiles**: choose from *Non-Destructive*, *Full Audit (with verification)*, and *Simulated* modes.
-* **Authentication support**: store session cookies, use form-login flows, or upload session recordings (securely encrypted on disk).
-* **Safe mode / Simulation**: run risk-free checks that emulate attacks without sending malicious payloads to production.
-* **Live evidence viewer**: view request/response pairs, stack traces, screenshots, and reproduction steps in the UI.
-* **Fine-grained controls**: concurrency, rate-limits, timeout, user-agent, and proxy settings.
-* **Plugin integration**: enable/disable plugin checks from the GUI.
-* **Export & sharing**: export JSON, CSV, PDF/HTML, and create ticket links for trackers.
-* **Access control**: role-based access in multi-user deployments.
-* **Audit logs & safe-guards**: scan approval workflows, pre-scan impact checks, and destructive-check confirmations.
+Live results panel: streaming findings with severity, affected path/parameter, and short remediation.
 
----
+Evidence viewer: click a finding to open request/response pairs, reproduction steps, and optional screenshot.
 
-## How to use (GUI)
+Activity & safety checks: pre-scan impact assessment and confirmation dialog when Full Audit is selected.
 
-1. **Open AresVuln** (desktop app or hosted web UI).
-2. **Create a new target**: give it a name, base URL, and scope (allowed domains/paths).
-3. **Set authentication (optional)**: add session cookies or configure a login flow.
-4. **Choose a scan profile**:
+Export: JSON, CSV, HTML/PDF for each scan.
 
-   * **Non-Destructive** — discovery + passive checks (safe for production).
-   * **Simulated** — emulates exploit attempts without sending real exploit payloads.
-   * **Full Audit** — includes active verification checks. *Disabled by default for new targets; requires explicit confirmation.*
-5. **Configure limits** (concurrency, rate limit, request timeout) and any proxy settings.
-6. **Start scan** — watch live progress, findings stream in the UI, and evidence is recorded.
-7. **Review & export** — use built-in filters to triage, add notes, and export reports.
+How it works (user flow)
 
----
+Open AresVuln GUI.
 
-## Safety and Ethics (must read)
+Paste the target URL into the single input box (e.g., https://app.example.com). Optionally set scope (domain/path regex).
 
-* **Default scan mode is Non-Destructive.** Active destructive checks are opt-in per target and require a second confirmation.
-* **Pre-scan Impact Checks**: AresVuln runs light checks to detect potentially high-impact endpoints (e.g., endpoints with destructive verbs, file uploads, or transaction endpoints) and will pause the scan for manual approval.
-* **Legal & Consent**: store proof of authorization (signed scope documents) with each target. The UI prompts for upload of authorization when enabling Full Audit mode.
-* **Logging & Data Handling**: scans produce sensitive artifacts (responses, cookies). Reports are encrypted at rest when stored in AresVuln’s workspace.
 
----
 
-## Quickstart (CLI)
+Click Scan.
 
-If you prefer the terminal or need to automate scans, the CLI remains available — but destructive checks are still gated behind explicit flags and require a valid authorization token.
+The scanner crawls the site within scope, extracts parameters, and runs the enabled checks. Findings stream into the results panel as they are discovered.
 
-```bash
-# run a basic (non-destructive) scan from CLI
-python aresvuln_cli.py --target https://example.com --profile non-destructive --output results.json
+Click a finding to view detailed evidence and reproduction steps. Use the Export button to save the report.
 
-# run a full audit (requires --confirm-destructive and an authorization token)
-python aresvuln_cli.py --target https://example.com --profile full-audit --confirm-destructive --auth-token /path/to/auth.json
-```
+Typical checks performed (configurable)
 
----
+Input validation and reflected/stored XSS checks
 
-## Configuration (config.yaml)
+SQL injection probing (safe vectors in Non‑Destructive; verified payloads only in Full Audit)
 
-```yaml
-ui:
-  port: 8080
-  workspace_path: ./workspaces/default
+Insecure direct object references (IDOR) checks
 
-scan:
-  concurrency: 10
-  rate_limit: 20
-  timeout: 10
-  default_profile: non-destructive
+CSRF presence checks and CSRF token validation
 
-security:
-  encrypt_reports: true
-  require_target_authorization: true
-```
+Server/config disclosure (headers, robots, sensitive files)
 
----
+File upload handling and LFI/RFI probes (limited/disabled in Non‑Destructive)
 
-## Modules & Plugin System
+Authentication flow testing (session fixation, password reset weaknesses)
 
-AresVuln keeps the same modular architecture:
+Custom user rules (YAML/JSON) for app‑specific endpoints
 
-* **crawler/** — URL discovery, sitemap parsing, parameter extraction
-* **scanner/** — modular checks; each check advertises whether it is *safe*, *active*, or *destructive*
-* **auth/** — browser-driven login recorder, cookie store, OAuth flows
-* **reporting/** — UI report renderer and file exporters
-* **plugins/** — enable/disable from GUI; plugin manifest must declare safety level
+Safety & Authorization
 
-Plugins that implement destructive interactions must declare that and will not be loadable unless the workspace admin enables them.
+Default mode = Non‑Destructive. Full Audit is opt‑in and requires an uploaded authorization document.
 
----
+Pre-scan impact check detects potentially destructive endpoints (payment, transaction, delete) and pauses for confirmation.
 
-## Reports & Evidence
+Rate-limits & concurrency are enforced and configurable to avoid DoS.
 
-Reports include a clear severity, suggested remediation, and a reproducible evidence block (requests, responses, screenshots). Sensitive data redaction is supported when exporting.
+Audit logs maintain who ran what scan and when; stores proof of authorization with Full Audit runs.
 
----
+Example GUI labels & layout (concept)
 
-## Best Practices for GUI Scanning
+Top bar: AresVuln logo | Settings | Reports
 
-* Start with **Non-Destructive** on production.
-* Use **Staging** environments for Full Audit runs.
-* Limit concurrency and set rate-limits on live systems.
-* Keep authorization documents attached to targets for auditability.
+Main panel (center):
 
----
+Target URL: [ ____________________________ ] [Scan ▼] [Profile: Non-Destructive ▼]
 
-## Development & Testing (UI)
+Right panel: Live Findings (streamed)
 
-* UI is built with React/Electron (or your chosen stack). Follow the code style in `ui/README.md`.
-* Run UI tests and end-to-end flows before releasing:
+Bottom panel: Evidence viewer / Request-Response / Export
 
-```bash
-cd ui && npm install && npm run test
-```
+Command-line (optional)
 
----
+For automation, the same scan can be run from CLI:
 
-## Contribution
+# non-destructive scan
+python aresvuln_cli.py --target https://example.com --profile non-destructive --out results.json
 
-Contributions welcome. All PRs affecting checks must include tests and an explicit safety classification for the check (*safe*, *active*, *destructive*).
+# full audit (requires auth token & confirmation)
+python aresvuln_cli.py --target https://example.com --profile full-audit --confirm-destructive --auth /path/to/auth.json
 
----
+Output formats
 
-## License
+results.json — canonical findings with evidence blocks
 
-MIT License — see `LICENSE` for details.
+report.html / report.pdf — human-readable report with remediation guidance
 
----
+findings.csv — spreadsheet import for trackers
 
-*Last updated: 2025-09-29*
+
+
+Best practices
+
+Start with Non‑Destructive in production.
+
+Run Full Audits only in staging or after obtaining written authorization.
+
+Attach authorization docs to each target when using Full Audit.
+
+Review rate limits to match target capacity.
+
+Contributing & development
+
+Contributions welcome. When adding checks, declare the safety level (safe/active/destructive) and include tests. Follow code style in ui/README.md and scanner/CONTRIBUTING.md.
